@@ -1,0 +1,30 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": [
+    "mrlecture"
+  ],
+  "ios": {
+    "iosModuleName": "MrLecture"
+  },
+  "android": {
+    "androidNamespace": [
+      "mrlecture"
+    ],
+    "androidCxxLibName": "MrLecture"
+  },
+  "autolinking": {
+    "MrLecture": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMrLecture"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMrLecture"
+      }
+    }
+  },
+  "ignorePaths": [
+    "**/node_modules"
+  ]
+}
