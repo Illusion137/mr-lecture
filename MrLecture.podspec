@@ -30,8 +30,6 @@ Pod::Spec.new do |s|
   install_modules_dependencies(s)
 
   # Piper TTS engine (optional — only needed if using engine: 'piper').
-  # If sherpa-onnx is not available via CocoaPods, download the XCFramework from:
-  #   https://github.com/k2-fsa/sherpa-onnx/releases
-  # and add it as a vendored framework.
-  s.dependency 'sherpa-onnx', '~> 1.10'
+  # Add sherpa-onnx as a vendored framework from https://github.com/k2-fsa/sherpa-onnx/releases
+  # or add `pod 'sherpa-onnx', '~> 1.10'` manually in your app's Podfile if it becomes available.
 end
