@@ -110,6 +110,21 @@ class PiperEngine {
     func getVoices() -> [VoiceInfo] {
         try? autoLoadBundledModelIfNeeded()
         guard let meta = lock.withLock({ modelMeta }) else { return [] }
+        #if canImport(SherpaOnnx)
+        if let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTtsWrapper, instance.numSpeakers > 1 {
+            let lang = inferLanguage(from: meta.id)
+            let quality = inferQuality(from: meta.id)
+            return (0..<instance.numSpeakers).map { sid in
+                VoiceInfo(
+                    id: "\(meta.id)-\(sid)",
+                    name: "\(meta.id) (Speaker \(sid))",
+                    language: lang,
+                    quality: quality,
+                    engine: .piper
+                )
+            }
+        }
+        #endif
         return [VoiceInfo(
             id: meta.id,
             name: meta.id,
@@ -126,7 +141,7 @@ class PiperEngine {
             .appendingPathExtension("wav")
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
-        try generate(text: text, rate: options.rate, to: tempURL.path)
+        try generate(text: text, voiceId: options.voiceId, rate: options.rate, to: tempURL.path)
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
@@ -150,7 +165,7 @@ class PiperEngine {
             for job in jobs {
                 group.addTask {
                     await semaphore.wait()
-                    let result = Result { try self.generate(text: job.text, rate: options.rate, to: job.outputPath) }
+                    let result = Result { try self.generate(text: job.text, voiceId: options.voiceId, rate: options.rate, to: job.outputPath) }
                     await semaphore.signal()
                     try result.get()
                 }
@@ -161,17 +176,30 @@ class PiperEngine {
 
     // MARK: - Private
 
-    private func generate(text: String, rate: Double?, to outputPath: String) throws {
+    private func resolve(voiceId: String?, modelId: String) -> Int {
+        guard let vid = voiceId, !vid.isEmpty else { return 0 }
+        // Voice IDs for multi-speaker Piper are formatted as "<modelId>-<sid>"
+        let prefix = modelId + "-"
+        if vid.hasPrefix(prefix), let sid = Int(vid.dropFirst(prefix.count)) {
+            return sid
+        }
+        // Bare integer SID
+        return Int(vid) ?? 0
+    }
+
+    private func generate(text: String, voiceId: String?, rate: Double?, to outputPath: String) throws {
         #if canImport(SherpaOnnx)
-        guard let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTtsWrapper else {
+        guard let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTtsWrapper,
+              let meta = lock.withLock({ modelMeta }) else {
             throw NSError(
                 domain: "MrLecture",
                 code: -3,
                 userInfo: [NSLocalizedDescriptionKey: "Piper model not loaded. Call setPiperModel() first."]
             )
         }
+        let sid = resolve(voiceId: voiceId, modelId: meta.id)
         let speed = Float(rate ?? 1.0)
-        let audio = instance.generate(text: text, sid: 0, speed: speed)
+        let audio = instance.generate(text: text, sid: sid, speed: speed)
         if audio.n <= 0 {
             throw NSError(
                 domain: "MrLecture",

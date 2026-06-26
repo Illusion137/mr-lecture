@@ -1393,6 +1393,10 @@ class SherpaOnnxOfflineTtsWrapper {
     }
   }
 
+  var numSpeakers: Int {
+    return Int(SherpaOnnxOfflineTtsNumSpeakers(tts))
+  }
+
   func generate(text: String, sid: Int = 0, speed: Float = 1.0) -> SherpaOnnxGeneratedAudioWrapper {
     let config = SherpaOnnxGenerationConfigSwift(speed: speed, sid: sid)
     return generateWithConfig(text: text, config: config, callback: nil, arg: nil)
