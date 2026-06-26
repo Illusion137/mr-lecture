@@ -17,7 +17,8 @@ import com.facebook.proguard.annotations.DoNotStrip
 @Keep
 enum class Engine(@DoNotStrip @Keep val value: Int) {
   AVS(0),
-  PIPER(1);
+  PIPER(1),
+  KOKORO(2);
 
   companion object
 }

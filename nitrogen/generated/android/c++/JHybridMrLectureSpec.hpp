@@ -55,6 +55,9 @@ namespace margelo::nitro::mrlecture {
   public:
     // Methods
     void setPiperModel(const std::string& onnxPath, const std::string& tokensPath) override;
+    void setKokoroModel(const std::string& modelPath, const std::string& voicesPath, const std::string& tokensPath) override;
+    std::shared_ptr<Promise<std::string>> downloadModel(const std::string& engine, const std::string& modelId, const std::string& destDir) override;
+    std::shared_ptr<Promise<void>> sampleVoice(Engine engine, const std::string& text, const SpeakOptions& options) override;
     std::shared_ptr<Promise<std::vector<VoiceInfo>>> getVoices(Engine engine) override;
     std::shared_ptr<Promise<void>> speak(const std::string& text, Engine engine, const SpeakOptions& options) override;
     std::shared_ptr<Promise<void>> exportBatch(const std::vector<ExportJob>& jobs, Engine engine, const ExportOptions& options) override;

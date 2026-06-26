@@ -1,7 +1,7 @@
 {
-  "name": "react-native-mr-lecture",
+  "name": "react-native-shumil",
   "version": "0.1.0",
-  "description": "High-performance batch TTS-to-file NitroModule for iOS. AVSpeechSynthesizer and Piper ONNX engines.",
+  "description": "High-performance batch TTS-to-file NitroModule for iOS. AVSpeechSynthesizer, Piper ONNX, and Kokoro CoreML engines with on-demand model download.",
   "main": "./lib/commonjs/index.js",
   "module": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -23,7 +23,10 @@
     "audiobook",
     "ios",
     "piper",
-    "avfoundation"
+    "kokoro",
+    "coreml",
+    "avfoundation",
+    "shumil"
   ],
   "files": [
     "src",
@@ -43,14 +46,15 @@
     "ios/**/*.cpp",
     "ios/**/*.swift",
     "app.plugin.js",
-    "*.podspec",
+    "Shumil.podspec",
+    "MrLecture.podspec",
     "README.md"
   ],
-  "repository": "https://github.com/illusion137/react-native-mr-lecture.git",
+  "repository": "https://github.com/illusion137/react-native-shumil.git",
   "author": "Illusion137",
   "license": "MIT",
-  "bugs": "https://github.com/illusion137/react-native-mr-lecture/issues",
-  "homepage": "https://github.com/illusion137/react-native-mr-lecture#readme",
+  "bugs": "https://github.com/illusion137/react-native-shumil/issues",
+  "homepage": "https://github.com/illusion137/react-native-shumil#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

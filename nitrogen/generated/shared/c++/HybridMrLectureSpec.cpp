@@ -15,6 +15,9 @@ namespace margelo::nitro::mrlecture {
     // load custom methods/properties
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridMethod("setPiperModel", &HybridMrLectureSpec::setPiperModel);
+      prototype.registerHybridMethod("setKokoroModel", &HybridMrLectureSpec::setKokoroModel);
+      prototype.registerHybridMethod("downloadModel", &HybridMrLectureSpec::downloadModel);
+      prototype.registerHybridMethod("sampleVoice", &HybridMrLectureSpec::sampleVoice);
       prototype.registerHybridMethod("getVoices", &HybridMrLectureSpec::getVoices);
       prototype.registerHybridMethod("speak", &HybridMrLectureSpec::speak);
       prototype.registerHybridMethod("exportBatch", &HybridMrLectureSpec::exportBatch);

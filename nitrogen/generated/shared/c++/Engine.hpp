@@ -31,6 +31,7 @@ namespace margelo::nitro::mrlecture {
   enum class Engine {
     AVS      SWIFT_NAME(avs) = 0,
     PIPER      SWIFT_NAME(piper) = 1,
+    KOKORO      SWIFT_NAME(kokoro) = 2,
   } CLOSED_ENUM;
 
 } // namespace margelo::nitro::mrlecture
@@ -45,6 +46,7 @@ namespace margelo::nitro {
       switch (hashString(unionValue.c_str(), unionValue.size())) {
         case hashString("avs"): return margelo::nitro::mrlecture::Engine::AVS;
         case hashString("piper"): return margelo::nitro::mrlecture::Engine::PIPER;
+        case hashString("kokoro"): return margelo::nitro::mrlecture::Engine::KOKORO;
         default: [[unlikely]]
           throw std::invalid_argument("Cannot convert \"" + unionValue + "\" to enum Engine - invalid value!");
       }
@@ -53,6 +55,7 @@ namespace margelo::nitro {
       switch (arg) {
         case margelo::nitro::mrlecture::Engine::AVS: return JSIConverter<std::string>::toJSI(runtime, "avs");
         case margelo::nitro::mrlecture::Engine::PIPER: return JSIConverter<std::string>::toJSI(runtime, "piper");
+        case margelo::nitro::mrlecture::Engine::KOKORO: return JSIConverter<std::string>::toJSI(runtime, "kokoro");
         default: [[unlikely]]
           throw std::invalid_argument("Cannot convert Engine to JS - invalid value: "
                                     + std::to_string(static_cast<int>(arg)) + "!");
@@ -66,6 +69,7 @@ namespace margelo::nitro {
       switch (hashString(unionValue.c_str(), unionValue.size())) {
         case hashString("avs"):
         case hashString("piper"):
+        case hashString("kokoro"):
           return true;
         default:
           return false;

@@ -21,6 +21,8 @@ public extension Engine {
         self = .avs
       case "piper":
         self = .piper
+      case "kokoro":
+        self = .kokoro
       default:
         return nil
     }
@@ -35,6 +37,8 @@ public extension Engine {
         return "avs"
       case .piper:
         return "piper"
+      case .kokoro:
+        return "kokoro"
     }
   }
 }

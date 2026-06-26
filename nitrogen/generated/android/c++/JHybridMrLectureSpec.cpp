@@ -72,6 +72,41 @@ namespace margelo::nitro::mrlecture {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* onnxPath */, jni::alias_ref<jni::JString> /* tokensPath */)>("setPiperModel");
     method(_javaPart, jni::make_jstring(onnxPath), jni::make_jstring(tokensPath));
   }
+  void JHybridMrLectureSpec::setKokoroModel(const std::string& modelPath, const std::string& voicesPath, const std::string& tokensPath) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* modelPath */, jni::alias_ref<jni::JString> /* voicesPath */, jni::alias_ref<jni::JString> /* tokensPath */)>("setKokoroModel");
+    method(_javaPart, jni::make_jstring(modelPath), jni::make_jstring(voicesPath), jni::make_jstring(tokensPath));
+  }
+  std::shared_ptr<Promise<std::string>> JHybridMrLectureSpec::downloadModel(const std::string& engine, const std::string& modelId, const std::string& destDir) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* engine */, jni::alias_ref<jni::JString> /* modelId */, jni::alias_ref<jni::JString> /* destDir */)>("downloadModel");
+    auto __result = method(_javaPart, jni::make_jstring(engine), jni::make_jstring(modelId), jni::make_jstring(destDir));
+    return [&]() {
+      auto __promise = Promise<std::string>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JString>(__boxedResult);
+        __promise->resolve(__result->toStdString());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridMrLectureSpec::sampleVoice(Engine engine, const std::string& text, const SpeakOptions& options) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<JEngine> /* engine */, jni::alias_ref<jni::JString> /* text */, jni::alias_ref<JSpeakOptions> /* options */)>("sampleVoice");
+    auto __result = method(_javaPart, JEngine::fromCpp(engine), jni::make_jstring(text), JSpeakOptions::fromCpp(options));
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
   std::shared_ptr<Promise<std::vector<VoiceInfo>>> JHybridMrLectureSpec::getVoices(Engine engine) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<JEngine> /* engine */)>("getVoices");
     auto __result = method(_javaPart, JEngine::fromCpp(engine));

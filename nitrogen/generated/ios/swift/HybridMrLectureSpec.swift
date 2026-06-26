@@ -14,6 +14,9 @@ public protocol HybridMrLectureSpec_protocol: HybridObject {
 
   // Methods
   func setPiperModel(onnxPath: String, tokensPath: String) throws -> Void
+  func setKokoroModel(modelPath: String, voicesPath: String, tokensPath: String) throws -> Void
+  func downloadModel(engine: String, modelId: String, destDir: String) throws -> Promise<String>
+  func sampleVoice(engine: Engine, text: String, options: SpeakOptions) throws -> Promise<Void>
   func getVoices(engine: Engine) throws -> Promise<[VoiceInfo]>
   func speak(text: String, engine: Engine, options: SpeakOptions) throws -> Promise<Void>
   func exportBatch(jobs: [ExportJob], engine: Engine, options: ExportOptions) throws -> Promise<Void>

@@ -42,16 +42,16 @@ class PiperEngine {
         )
         let modelConfig = sherpaOnnxOfflineTtsModelConfig(
             vits: vitsConfig,
-            numThreads: Int32(ProcessInfo.processInfo.processorCount),
+            numThreads: ProcessInfo.processInfo.processorCount,
             debug: 0,
             provider: "cpu"
         )
-        let config = sherpaOnnxOfflineTtsConfig(
+        var config = sherpaOnnxOfflineTtsConfig(
             model: modelConfig,
             ruleFsts: "",
             maxNumSentences: 1
         )
-        let instance = SherpaOnnxOfflineTts(config: config)
+        let instance = SherpaOnnxOfflineTtsWrapper(config: &config)
         lock.withLock {
             tts = instance
             modelMeta = ModelMeta(
@@ -69,10 +69,62 @@ class PiperEngine {
         #endif
     }
 
+    // Auto-load the model bundled into the app by the SherpaOnnx pod's
+    // `PiperModels` resource bundle, so callers never need a device path. The
+    // model folder (onnx + tokens.txt + espeak-ng-data) is copied verbatim, so
+    // we locate the .onnx and let `load` discover espeak-ng-data beside it.
+    func autoLoadBundledModelIfNeeded() throws {
+        if lock.withLock({ modelMeta }) != nil { return }
+        guard let onnxPath = Self.bundledOnnxPath() else {
+            throw NSError(
+                domain: "MrLecture",
+                code: -7,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "No bundled Piper model found. Run scripts/fetch-piper.sh, then pod install."]
+            )
+        }
+        let tokensPath = (onnxPath as NSString).deletingLastPathComponent
+            + "/tokens.txt"
+        try load(onnxPath: onnxPath, tokensPath: tokensPath)
+    }
+
+    private static func bundledOnnxPath() -> String? {
+        var bundles: [Bundle] = [Bundle.main]
+        if let url = Bundle.main.url(forResource: "PiperModels", withExtension: "bundle"),
+           let b = Bundle(url: url) {
+            bundles.insert(b, at: 0)
+        }
+        for bundle in bundles {
+            guard let root = bundle.resourceURL,
+                  let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+            else { continue }
+            for case let url as URL in walker where url.pathExtension == "onnx" {
+                return url.path
+            }
+        }
+        return nil
+    }
+
     // MARK: - Public API
 
     func getVoices() -> [VoiceInfo] {
+        try? autoLoadBundledModelIfNeeded()
         guard let meta = lock.withLock({ modelMeta }) else { return [] }
+        #if canImport(SherpaOnnx)
+        if let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTtsWrapper, instance.numSpeakers > 1 {
+            let lang = inferLanguage(from: meta.id)
+            let quality = inferQuality(from: meta.id)
+            return (0..<instance.numSpeakers).map { sid in
+                VoiceInfo(
+                    id: "\(meta.id)-\(sid)",
+                    name: "\(meta.id) (Speaker \(sid))",
+                    language: lang,
+                    quality: quality,
+                    engine: .piper
+                )
+            }
+        }
+        #endif
         return [VoiceInfo(
             id: meta.id,
             name: meta.id,
@@ -83,12 +135,13 @@ class PiperEngine {
     }
 
     func speak(text: String, options: SpeakOptions) async throws {
+        try autoLoadBundledModelIfNeeded()
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("wav")
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
-        try generate(text: text, rate: options.rate, to: tempURL.path)
+        try generate(text: text, voiceId: options.voiceId, rate: options.rate, to: tempURL.path)
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
@@ -104,6 +157,7 @@ class PiperEngine {
     }
 
     func exportBatch(jobs: [ExportJob], options: ExportOptions) async throws {
+        try autoLoadBundledModelIfNeeded()
         let concurrency = Int(options.concurrency ?? Double(ProcessInfo.processInfo.processorCount))
         let semaphore = AsyncSemaphore(value: concurrency)
 
@@ -111,8 +165,9 @@ class PiperEngine {
             for job in jobs {
                 group.addTask {
                     await semaphore.wait()
-                    defer { semaphore.signal() }
-                    try self.generate(text: job.text, rate: options.rate, to: job.outputPath)
+                    let result = Result { try self.generate(text: job.text, voiceId: options.voiceId, rate: options.rate, to: job.outputPath) }
+                    await semaphore.signal()
+                    try result.get()
                 }
             }
             try await group.waitForAll()
@@ -121,30 +176,47 @@ class PiperEngine {
 
     // MARK: - Private
 
-    private func generate(text: String, rate: Double?, to outputPath: String) throws {
+    private func resolve(voiceId: String?, modelId: String) -> Int {
+        guard let vid = voiceId, !vid.isEmpty else { return 0 }
+        // Voice IDs for multi-speaker Piper are formatted as "<modelId>-<sid>"
+        let prefix = modelId + "-"
+        if vid.hasPrefix(prefix), let sid = Int(vid.dropFirst(prefix.count)) {
+            return sid
+        }
+        // Bare integer SID
+        return Int(vid) ?? 0
+    }
+
+    private func generate(text: String, voiceId: String?, rate: Double?, to outputPath: String) throws {
         #if canImport(SherpaOnnx)
-        guard let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTts else {
+        guard let instance = lock.withLock({ tts }) as? SherpaOnnxOfflineTtsWrapper,
+              let meta = lock.withLock({ modelMeta }) else {
             throw NSError(
                 domain: "MrLecture",
                 code: -3,
                 userInfo: [NSLocalizedDescriptionKey: "Piper model not loaded. Call setPiperModel() first."]
             )
         }
+        let sid = resolve(voiceId: voiceId, modelId: meta.id)
         let speed = Float(rate ?? 1.0)
-        guard let audio = instance.generate(text: text, sid: 0, speed: speed) else {
+        let audio = instance.generate(text: text, sid: sid, speed: speed)
+        if audio.n <= 0 {
             throw NSError(
                 domain: "MrLecture",
                 code: -4,
-                userInfo: [NSLocalizedDescriptionKey: "Piper synthesis returned nil for text: \(text.prefix(80))"]
+                userInfo: [NSLocalizedDescriptionKey: "Piper synthesis produced no audio for text: \(text.prefix(80))"]
             )
         }
-        // sherpa-onnx writes a standard WAV file directly
-        let ok = audio.save(filename: outputPath)
-        if !ok {
+        // sherpa-onnx writes a standard WAV file directly. Its C save API needs a plain
+        // filesystem path, but the JS layer passes an Expo cacheDirectory URI
+        // ("file:///var/.../x.wav"); save() can't write to that, so strip the scheme.
+        let savePath = outputPath.hasPrefix("file://") ? (URL(string: outputPath)?.path ?? outputPath) : outputPath
+        let ok = audio.save(filename: savePath)
+        if ok != 1 {
             throw NSError(
                 domain: "MrLecture",
                 code: -5,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to save audio to \(outputPath)"]
+                userInfo: [NSLocalizedDescriptionKey: "Failed to save audio to \(savePath)"]
             )
         }
         #else
