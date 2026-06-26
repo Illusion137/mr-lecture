@@ -89,6 +89,28 @@ namespace margelo::nitro::mrlecture {
         std::rethrow_exception(__result.error());
       }
     }
+    inline void setKokoroModel(const std::string& modelPath, const std::string& voicesPath, const std::string& tokensPath) override {
+      auto __result = _swiftPart.setKokoroModel(modelPath, voicesPath, tokensPath);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+    }
+    inline std::shared_ptr<Promise<std::string>> downloadModel(const std::string& engine, const std::string& modelId, const std::string& destDir) override {
+      auto __result = _swiftPart.downloadModel(engine, modelId, destDir);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> sampleVoice(Engine engine, const std::string& text, const SpeakOptions& options) override {
+      auto __result = _swiftPart.sampleVoice(static_cast<int>(engine), text, std::forward<decltype(options)>(options));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
     inline std::shared_ptr<Promise<std::vector<VoiceInfo>>> getVoices(Engine engine) override {
       auto __result = _swiftPart.getVoices(static_cast<int>(engine));
       if (__result.hasError()) [[unlikely]] {

@@ -32,7 +32,19 @@ abstract class HybridMrLectureSpec: HybridObject() {
   @DoNotStrip
   @Keep
   abstract fun setPiperModel(onnxPath: String, tokensPath: String): Unit
-  
+
+  @DoNotStrip
+  @Keep
+  abstract fun setKokoroModel(modelPath: String, voicesPath: String, tokensPath: String): Unit
+
+  @DoNotStrip
+  @Keep
+  abstract fun downloadModel(engine: String, modelId: String, destDir: String): Promise<String>
+
+  @DoNotStrip
+  @Keep
+  abstract fun sampleVoice(engine: Engine, text: String, options: SpeakOptions): Promise<Unit>
+
   @DoNotStrip
   @Keep
   abstract fun getVoices(engine: Engine): Promise<Array<VoiceInfo>>

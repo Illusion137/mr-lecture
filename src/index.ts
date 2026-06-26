@@ -1,9 +1,12 @@
 import { NitroModules } from 'react-native-nitro-modules'
-import type { MrLecture as MrLectureSpec } from './specs/mr-lecture.nitro'
+import type { MrLecture as ShumilSpec } from './specs/mr-lecture.nitro'
 
-export const MrLecture = NitroModules.createHybridObject<MrLectureSpec>('MrLecture')
+export const Shumil = NitroModules.createHybridObject<ShumilSpec>('MrLecture')
 
-export type { MrLecture as MrLectureSpec } from './specs/mr-lecture.nitro'
+/** @deprecated Use {@link Shumil} instead. */
+export const MrLecture = Shumil
+
+export type { MrLecture as ShumilSpec } from './specs/mr-lecture.nitro'
 export type {
   Engine,
   VoiceInfo,
